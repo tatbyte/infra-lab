@@ -1,0 +1,36 @@
+services:
+  node1:
+    build:
+      context: .
+      args:
+        DOCKER_USER: admin
+        DOCKER_PASS: admin
+    container_name: node1
+    tty: true
+    stdin_open: true
+    networks:
+      lab_macvlan:
+        ipv4_address: 192.168.0.101
+    restart: unless-stopped
+  node2:
+    build:
+      context: .
+      args:
+        DOCKER_USER: admin
+        DOCKER_PASS: admin
+    container_name: node2
+    tty: true
+    stdin_open: true
+    networks:
+      lab_macvlan:
+        ipv4_address: 192.168.0.102
+    restart: unless-stopped
+networks:
+  lab_macvlan:
+    driver: macvlan
+    driver_opts:
+      parent: etho1
+    ipam:
+      config:
+      - subnet: 192.168.0.0/24
+        gateway: 192.168.0.1
