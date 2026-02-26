@@ -1,0 +1,70 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+ENV_FILE = ".env"
+abort(".env file not found") unless File.exist?(ENV_FILE)
+
+# Load .env
+File.readlines(ENV_FILE).each do |line|
+  line = line.split("#").first
+  next if line.nil? || line.strip.empty?
+  key, value = line.strip.split("=", 2)
+  ENV[key.strip] = value.strip
+end
+
+# Parse environment
+VM_MAPPING     = ENV['VM_MAPPING'] || "node1:192.168.0.101,node2:192.168.0.102"
+VM_MAPPING     = VM_MAPPING.split(',').map { |e| e.split(':') }.to_h
+VM_MEMORY      = ENV['VM_MEMORY'] || "2048"
+VM_MEMORY      = VM_MEMORY.to_i
+VM_CPUS        = ENV['VM_CPUS'] || "2"
+VM_CPUS        = VM_CPUS.to_i
+VM_BOX         = ENV['VM_BOX'] || "generic/ubuntu2204"
+USERNAME       = ENV['VM_USER'] || "admin"
+PASSWORD       = ENV['VM_PASS'] || "admin"
+BRIDGE_IF      = ENV['BRIDGE_IF'] || "eth0"
+
+Vagrant.configure("2") do |config|
+  config.vm.provider :libvirt do |lv|
+    lv.driver = "kvm"
+  end
+
+  VM_MAPPING.each do |name, ip|
+    config.vm.define name do |node|
+      node.vm.box = VM_BOX
+      node.vm.hostname = name
+
+      # === BRIDGED NETWORK WITH STATIC LAN IP ===
+      node.vm.network "public_network",
+        bridge: BRIDGE_IF,
+        ip: ip,
+        dev: BRIDGE_IF    # ensures libvirt uses the correct host interface
+
+      # Resources
+      node.vm.provider :libvirt do |lv|
+        lv.memory = VM_MEMORY
+        lv.cpus   = VM_CPUS
+        lv.cpu_mode = "host-passthrough"
+      end
+
+      # Provision: create user + enable password SSH
+      node.vm.provision "shell", inline: <<-SHELL
+        set -e
+        echo "=== SSH provisioning for user #{USERNAME} ==="
+        if ! id "#{USERNAME}" >/dev/null 2>&1; then
+          sudo useradd -m -s /bin/bash "#{USERNAME}"
+        fi
+        sudo usermod -aG sudo "#{USERNAME}"
+        echo "#{USERNAME}:#{PASSWORD}" | sudo chpasswd
+        echo "#{USERNAME} ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/#{USERNAME}
+
+        sudo sed -i '/^AllowUsers/d' /etc/ssh/sshd_config
+        sudo sed -i '/^DenyUsers/d' /etc/ssh/sshd_config
+        sudo sed -i 's/^#\\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        sudo sed -i 's/^#\\?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
+        sudo sed -i 's/^#\\?PubkeyAuthentication .*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+
+        sudo systemctl restart ssh || sudo systemctl restart sshd
+      SHELL
+    end
+  end
+end
