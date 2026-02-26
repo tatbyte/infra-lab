@@ -6,7 +6,7 @@ The primary purpose of this repository is to provide a virtual lab environment f
 
 ## What You Can Do With This Setup
 
-- Test and develop Ansible roles, playbooks, and inventory files across several VMs
+- Test and develop Ansible roles, playbooks, and inventory files across several VMs or containers
 - Simulate a multi-host network for infrastructure automation
 - Experiment with system configuration, networking, and user management
 - Practice infrastructure-as-code workflows
@@ -17,14 +17,16 @@ The primary purpose of this repository is to provide a virtual lab environment f
 ## Structure
 
 - `vagrant/` – Vagrant configuration and environment files for VM setup
+- `docker/` – Docker Compose configuration and scripts for container-based lab setup
 - `docs/` – Guides and documentation for configuring and using the lab
 
 ## Getting Started
 
-1. Follow the instructions in `docs/01-configure-lab.md` to set up your environment.
-2. Use the VMs to test Ansible or other automation tools.
-3. Adjust the configuration as needed for your use case.
+1. For a VM-based lab, follow the instructions in `docs/01-configure-lab.md`.
+2. For a container-based lab, follow the instructions in `docs/01-configure-docker-lab.md`.
+3. Use the VMs or containers to test Ansible or other automation tools.
+4. Adjust the configuration as needed for your use case.
 
 ---
 
-This lab is ideal for anyone wanting to safely test infrastructure changes, automation, or new software before applying them to production systems.
+This lab is ideal for anyone wanting to safely test infrastructure changes, automation, or new software before applying them to production systems. You can choose between a Vagrant-based VM lab or a Docker-based container lab, depending on your needs and available resources.
