@@ -73,32 +73,79 @@ This guide explains how to configure the Docker-based lab environment, access th
 
 ## 5. Optionally: SSH from the Host Machine
 
-You can SSH directly from the host to any container:
-  ```sh
-  ssh admin@192.168.0.101
-  ```
+
+### Important: Macvlan Network & SSH Access from Host
+
+By default, containers attached to a Docker `macvlan` network are **not accessible from the host** (the host cannot reach the macvlan subnet). This means SSH from the host to a container will **fail** unless you add a network route.
+
+#### 1. Add a Temporary Route (for current session)
+
+Replace `192.168.0.0/24` with your macvlan subnet and `eno1` with your parent interface:
+```sh
+sudo ip route add 192.168.0.0/24 dev eno1
+```
+After this, you can SSH from the host:
+```sh
+ssh admin@192.168.0.101
+```
+
+#### 2. Make the Route Persistent (Survives Reboot)
+
+**On Ubuntu with Netplan:**
+1. Edit the appropriate `/etc/netplan/*.yaml` file and add under your interface:
+   ```yaml
+   network:
+    ethernets:
+      eno1:
+       routes:
+        - to: 192.168.0.0/24
+          via: 0.0.0.0
+   ```
+2. Apply changes:
+   ```sh
+   sudo netplan apply
+   ```
+
+**On Debian/Ubuntu with `/etc/network/interfaces`:**
+1. Add this under the `iface` section for `eno1`:
+   ```
+   up ip route add 192.168.0.0/24 dev eno1
+   ```
+
+**On systems using `/etc/rc.local`:**
+1. Add before `exit 0`:
+   ```sh
+   ip route add 192.168.0.0/24 dev eno1
+   ```
+
+#### 3. Limitations & Alternatives
+
+- This is a Docker/macvlan limitation: the host is isolated from the macvlan network by default.
+- You can use a bridge network (less isolation, but host access works out of the box), or set up a dedicated "gateway" container to proxy traffic.
+
+---
 
 ### Configure SSH Access Without Password
 
 If you want passwordless SSH access from the host:
 
 1. Generate an SSH key on the host (if you don't have one):
-   ```sh
-   ssh-keygen -t ed25519 -C "user@example.com"
-   # Press Enter to accept defaults
-   ```
+  ```sh
+  ssh-keygen -t ed25519 -C "user@example.com"
+  # Press Enter to accept defaults
+  ```
 
 2. Copy your public key to each container:
-   ```sh
-   ssh-copy-id admin@192.168.0.101
-   ssh-copy-id admin@192.168.0.102
-   # Enter the password as set in .env
-   ```
+  ```sh
+  ssh-copy-id admin@192.168.0.101
+  ssh-copy-id admin@192.168.0.102
+  # Enter the password as set in .env
+  ```
 
 3. Now you can SSH without a password:
-   ```sh
-   ssh admin@192.168.0.101
-   ```
+  ```sh
+  ssh admin@192.168.0.101
+  ```
 
 Or use Docker's exec:
   ```sh

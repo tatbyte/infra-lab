@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Refactored Docker setup: reorganized directory structure, updated .gitignore, enhanced README, and improved gen_compose.py for secure and best-practice .env and secret management ([#5](https://github.com/tatbyte/infra-lab/issues/5)).
 
+### Documentation
+- Improved Docker lab documentation: clarified macvlan network limitations and SSH access from host, added instructions for adding temporary and persistent routes, and mentioned alternatives ([#7](https://github.com/tatbyte/infra-lab/issues/7)).
+
 ## [1.2.0] - 2026-02-26
 ### Changed
 - Improved and clarified documentation for Vagrant and Docker lab setups ([#3](https://github.com/tatbyte/infra-lab/issues/3)).
