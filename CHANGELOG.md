@@ -1,6 +1,13 @@
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.2.0] - 2026-02-26
+### Changed
+- Improved and clarified documentation for Vagrant and Docker lab setups ([#3](https://github.com/tatbyte/infra-lab/issues/3)).
+- Updated all setup guides to reference correct filenames and step order.
+- Added instructions for tagging and changelog updates.
 
 ## [1.1.0] - 2026-02-26
 ### Added
