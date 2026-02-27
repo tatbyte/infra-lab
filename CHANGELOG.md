@@ -1,7 +1,10 @@
-
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.3.0] - 2026-02-27
+### Changed
+- Refactored Docker setup: reorganized directory structure, updated .gitignore, enhanced README, and improved gen_compose.py for secure and best-practice .env and secret management ([#5](https://github.com/tatbyte/infra-lab/issues/5)).
 
 ## [1.2.0] - 2026-02-26
 ### Changed
