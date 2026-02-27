@@ -48,7 +48,7 @@ This directory contains configuration files for spinning up a multi-container la
 
 1. Copy `template.env` to `.env` and adjust settings as needed.
 2. Run `python3 gen_compose.py` to generate `docker-compose.yml` from the template.
-3. Run `docker compose up -d` to start the lab.
+3. Run `docker compose up -d --build` to start the lab.
 4. Use `docker exec -it <container>` or SSH directly to each container.
 5. Test your Ansible playbooks or other automation tools.
 

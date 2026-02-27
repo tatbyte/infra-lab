@@ -60,8 +60,8 @@ Edit `.env` to define:
   ```
 - SSH into the VM:
   ```sh
-  ssh tatbyte@192.168.0.101
-  # Password: testing (or as set in .env)
+  ssh admin@192.168.0.101
+  # Password: admin (or as set in .env)
   ```
 
 ---
@@ -79,10 +79,8 @@ You can SSH directly from the host to any VM:
 If you want passwordless SSH access from the host (without using `vagrant ssh`):
 
 1. Generate an SSH key on the host (if you don't have one):
-   ```sh
+  Run the following command and press Enter to accept defaults:
   ssh-keygen -t ed25519 -C "user@example.com"
-   # Press Enter to accept defaults
-   ```
 
 2. Copy your public key to each VM:
   ```sh

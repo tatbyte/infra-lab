@@ -42,9 +42,9 @@ Edit `.env` to define:
 
 ## 3. Launch the Lab
 
-- Start the containers:
+- Start the containers (with build):
   ```sh
-  docker compose up -d
+  docker compose up -d --build
   ```
 - Containers will be provisioned with static IPs and bridged networking.
 
