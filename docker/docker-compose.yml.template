@@ -1,11 +1,11 @@
 services:
   node1:
     build:
-      context: .
-      args:
-        DOCKER_USER: admin
-        DOCKER_PASS: admin
+      context: ..
+      dockerfile: images/base/Dockerfile
     container_name: node1
+    env_file:
+      - ../.env
     tty: true
     stdin_open: true
     networks:
@@ -14,11 +14,11 @@ services:
     restart: unless-stopped
   node2:
     build:
-      context: .
-      args:
-        DOCKER_USER: admin
-        DOCKER_PASS: admin
+      context: ..
+      dockerfile: images/base/Dockerfile
     container_name: node2
+    env_file:
+      - ../.env
     tty: true
     stdin_open: true
     networks:
@@ -29,7 +29,7 @@ networks:
   lab_macvlan:
     driver: macvlan
     driver_opts:
-      parent: etho1
+      parent: eno1
     ipam:
       config:
       - subnet: 192.168.0.0/24

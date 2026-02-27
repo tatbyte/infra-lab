@@ -4,15 +4,30 @@
 
 This directory contains configuration files for spinning up a multi-container lab environment using Docker Compose. The primary goal is to create a reproducible setup for testing Ansible automation, networking, and service orchestration across several containers.
 
+## Directory Structure
+
+```
+docker/
+├── compose/
+│   └── docker-compose.yml       # Generated — do not edit by hand
+├── images/
+│   └── base/
+│       └── Dockerfile           # Base image for all lab containers
+├── scripts/
+│   └── entrypoint.sh            # Creates the lab user at container startup
+├── gen_compose.py               # Reads .env and generates compose/docker-compose.yml
+├── docker-compose.yml.template  # Reference example of the generated compose format
+├── template.env                 # Example .env — copy to .env and customise
+└── README.md
+```
+
 ## What the Code Does
 
-- Uses a `.env` file to define container settings (image, memory, CPUs, user, password, network, and hostname-to-IP mapping).
-- The `docker-compose.yml` (generated from `docker-compose.yml.template` and `gen_compose.py`) provisions containers with:
-  - Static LAN IPs for each container
-  - Custom user creation and SSH password setup
-  - Bridged networking for direct LAN access
-  - Resource allocation (RAM, CPU)
-  - Automated SSH configuration for Ansible compatibility
+- Uses a `.env` file (in `docker/`) to define node names, IPs, credentials, and network settings.
+- `gen_compose.py` reads `.env` and generates `compose/docker-compose.yml` with all values resolved — no `${VAR}` placeholders are used.
+- Each container is built from `images/base/Dockerfile`, which installs common packages and copies the entrypoint script.
+- `scripts/entrypoint.sh` creates the lab user at container startup using `DOCKER_USER` and `DOCKER_PASS` from the environment — credentials are never baked into the image.
+- Containers are given static IPs on a macvlan network for direct LAN access.
 
 ## Typical Use Cases
 
@@ -39,17 +54,27 @@ This directory contains configuration files for spinning up a multi-container la
 
 ## Extending the Lab
 
-- Add more containers by updating the `VM_MAPPING` in `.env` and regenerating the compose file
-- Change the base image or resources for different OS or performance
-- Customize provisioning scripts for more complex setups
+- Add more containers by adding `NODE<n>=name:ip` entries in `.env` and regenerating the compose file
+- Change the base image or resources in `images/base/Dockerfile`
+- Customise `scripts/entrypoint.sh` for more complex provisioning
 - Integrate with other tools (e.g., Vagrant, Kubernetes) for hybrid testing
 
 ## Getting Started
 
-1. Copy `template.env` to `.env` and adjust settings as needed.
-2. Run `python3 gen_compose.py` to generate `docker-compose.yml` from the template.
-3. Run `docker compose up -d --build` to start the lab.
-4. Use `docker exec -it <container>` or SSH directly to each container.
+1. Copy `template.env` to `.env` and adjust settings as needed:
+   ```sh
+   cp template.env .env
+   ```
+2. Run `gen_compose.py` to generate the compose file:
+   ```sh
+   python3 gen_compose.py
+   ```
+3. Start the lab:
+   ```sh
+   cd compose
+   docker compose up -d --build
+   ```
+4. Use `docker exec -it <container> bash` or SSH directly to each container.
 5. Test your Ansible playbooks or other automation tools.
 
 ---

@@ -8,18 +8,18 @@ RUN apt-get update && \
     locales \
     && apt-get clean
 
-ARG DOCKER_USER
-ARG DOCKER_PASS
-RUN useradd -ms /bin/bash $DOCKER_USER && \
-    echo "$DOCKER_USER:$DOCKER_PASS" | chpasswd && \
-    echo "$DOCKER_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
 # Enable SSH password authentication
 RUN sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 RUN mkdir -p /var/run/sshd
 
+# User creation happens at container startup via entrypoint.sh,
+# reading DOCKER_USER and DOCKER_PASS from the runtime environment (.env).
+# Build context is docker/ so the path is relative to that root.
+COPY scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 22
 
-CMD ["/usr/sbin/sshd", "-D"]
+ENTRYPOINT ["/entrypoint.sh"]
