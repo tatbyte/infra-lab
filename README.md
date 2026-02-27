@@ -20,12 +20,17 @@ The primary purpose of this repository is to provide a virtual lab environment f
 - `docker/` – Docker Compose configuration and scripts for container-based lab setup
 - `docs/` – Guides and documentation for configuring and using the lab
 
+
 ## Getting Started
 
-1. For a VM-based lab, follow the instructions in `docs/01-configure-lab.md`.
-2. For a container-based lab, follow the instructions in `docs/01-configure-docker-lab.md`.
-3. Use the VMs or containers to test Ansible or other automation tools.
-4. Adjust the configuration as needed for your use case.
+
+Refer to the documentation in the `docs/` directory for detailed setup instructions:
+
+1. For Vagrant installation, see: `docs/00-vagrant-installation.md`
+2. For Vagrant-based VM lab setup, see: `docs/01-configure-vagrant-lab.md`
+3. For Docker-based container lab setup, see: `docs/02-configure-docker-lab.md`
+
+After following the relevant setup guide, use the VMs or containers to test Ansible or other automation tools. Adjust the configuration as needed for your use case.
 
 ---
 
