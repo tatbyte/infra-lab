@@ -1,5 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+require "shellwords"
+
 ENV_FILE = ".env"
 abort(".env file not found") unless File.exist?(ENV_FILE)
 
@@ -21,9 +23,16 @@ VM_CPUS        = VM_CPUS.to_i
 VM_BOX         = ENV['VM_BOX'] || "generic/ubuntu2204"
 USERNAME       = ENV['VM_USER'] || "admin"
 PASSWORD       = ENV['VM_PASS'] || "admin"
+USERNAME_SH    = Shellwords.escape(USERNAME)
+PASSWORD_SH    = Shellwords.escape(PASSWORD)
+CREATE_USER    = ENV.fetch('VM_CREATE_USER', 'true').strip.downcase == 'true'
 BRIDGE_IF      = ENV['BRIDGE_IF'] || "eth0"
 
 Vagrant.configure("2") do |config|
+  # Give Vagrant more total boot time before it gives up waiting for SSH.
+  config.vm.boot_timeout = 300
+  config.ssh.connect_timeout = 30
+  
   config.vm.provider :libvirt do |lv|
     lv.driver = "kvm"
   end
@@ -46,25 +55,27 @@ Vagrant.configure("2") do |config|
         lv.cpu_mode = "host-passthrough"
       end
 
-      # Provision: create user + enable password SSH
-      node.vm.provision "shell", inline: <<-SHELL
-        set -e
-        echo "=== SSH provisioning for user #{USERNAME} ==="
-        if ! id "#{USERNAME}" >/dev/null 2>&1; then
-          sudo useradd -m -s /bin/bash "#{USERNAME}"
-        fi
-        sudo usermod -aG sudo "#{USERNAME}"
-        echo "#{USERNAME}:#{PASSWORD}" | sudo chpasswd
-        echo "#{USERNAME} ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/#{USERNAME}
+      if CREATE_USER
+        # Provision: create a lab user with password SSH and sudo access
+        node.vm.provision "shell", inline: <<-SHELL
+          set -e
+          echo "=== SSH provisioning for user #{USERNAME} ==="
+          if ! id #{USERNAME_SH} >/dev/null 2>&1; then
+            sudo useradd -m -s /bin/bash #{USERNAME_SH}
+          fi
 
-        sudo sed -i '/^AllowUsers/d' /etc/ssh/sshd_config
-        sudo sed -i '/^DenyUsers/d' /etc/ssh/sshd_config
-        sudo sed -i 's/^#\\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-        sudo sed -i 's/^#\\?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
-        sudo sed -i 's/^#\\?PubkeyAuthentication .*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+          sudo usermod -aG sudo #{USERNAME_SH}
+          printf '%s:%s\n' #{USERNAME_SH} #{PASSWORD_SH} | sudo chpasswd
+          printf '%s ALL=(ALL) NOPASSWD:ALL\n' #{USERNAME_SH} | sudo tee /etc/sudoers.d/#{USERNAME_SH} >/dev/null
 
-        sudo systemctl restart ssh || sudo systemctl restart sshd
-      SHELL
+          sudo sed -i '/^AllowUsers/d' /etc/ssh/sshd_config
+          sudo sed -i '/^DenyUsers/d' /etc/ssh/sshd_config
+          sudo sed -i 's/^#\\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^#\\?PubkeyAuthentication .*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+
+          sudo systemctl restart ssh || sudo systemctl restart sshd
+        SHELL
+      end
     end
   end
 end

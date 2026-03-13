@@ -27,9 +27,15 @@ Edit `.env` to define:
   - VM_BOX: Vagrant box name (e.g., generic/ubuntu2204)
   - VM_MEMORY: RAM allocated to each VM (in MB, e.g., 2048)
   - VM_CPUS: Number of CPUs allocated to each VM (e.g., 2)
-  - VM_USER: Username to create in each VM (e.g., admin)
-  - VM_PASS: Password for the created user (e.g., admin)
+  - VM_USER: Username to manage in each VM when `VM_CREATE_USER=true` (e.g., `admin` or `vagrant`)
+  - VM_CREATE_USER: Set to `true` to manage `VM_USER` with password SSH and sudo, or `false` to leave the base box unchanged
+  - VM_PASS: Password applied to `VM_USER` when `VM_CREATE_USER=true` (e.g., `admin` or `vagrant`)
   - BRIDGE_IF: Host network interface to bridge for VM LAN access (e.g., eth0)
+
+Supported user modes:
+- Original Vagrant user: `VM_CREATE_USER=false`
+- Vagrant user with password SSH: `VM_CREATE_USER=true`, `VM_USER=vagrant`, `VM_PASS=vagrant`
+- Fully new user: `VM_CREATE_USER=true`, `VM_USER=admin`, `VM_PASS=admin`
 
 ### b. Check Network Interface
 - Ensure `BRIDGE_IF` matches your host's LAN interface.
@@ -44,6 +50,10 @@ Edit `.env` to define:
   vagrant up
   ```
 - VMs will be provisioned with static IPs and bridged networking.
+- To keep a fresh VM on the base box defaults, set `VM_CREATE_USER=false`.
+- To keep the original Vagrant account but add password-based SSH on the LAN IP, use `VM_CREATE_USER=true`, `VM_USER=vagrant`, and `VM_PASS=vagrant`.
+- To use a separate lab account, choose your own `VM_USER` and `VM_PASS` with `VM_CREATE_USER=true`.
+- If a VM was already created in a different mode, run `vagrant destroy -f` and `vagrant up` to rebuild it with the new user mode.
 
 ---
 
@@ -58,11 +68,17 @@ Edit `.env` to define:
   ```sh
   ping 192.168.0.101
   ```
-- SSH into the VM:
+- SSH into the VM with the user for your selected mode:
   ```sh
   ssh admin@192.168.0.101
   # Password: admin (or as set in .env)
   ```
+- If you kept the original Vagrant account with password SSH enabled:
+  ```sh
+  ssh vagrant@192.168.0.101
+  # Password: vagrant (or as set in .env)
+  ```
+- If you left the base box unchanged with `VM_CREATE_USER=false`, use `vagrant ssh node1` or the default key-based Vagrant access for that box.
 
 ---
 
@@ -71,7 +87,7 @@ Edit `.env` to define:
 
 You can SSH directly from the host to any VM:
   ```sh
-  ssh tatbyte@192.168.0.101
+  ssh admin@192.168.0.101
   ```
 
 ### Configure SSH Access Without Vagrant
@@ -87,6 +103,11 @@ If you want passwordless SSH access from the host (without using `vagrant ssh`):
   ssh-copy-id admin@192.168.0.101
   ssh-copy-id admin@192.168.0.102
   # Enter the password as set in .env (e.g., admin)
+  ```
+  Or, if you are using the managed Vagrant account:
+  ```sh
+  ssh-copy-id vagrant@192.168.0.101
+  ssh-copy-id vagrant@192.168.0.102
   ```
 
 3. Now you can SSH without a password:
@@ -117,6 +138,6 @@ Or use Vagrant's built-in SSH:
 1. Install dependencies and clone the project.
 2. Configure `.env` for your network and VM needs.
 3. Launch the lab with `vagrant up`.
-4. Access VMs from other PCs or the host using SSH.
+4. Access VMs from other PCs or the host using the user mode you selected.
 
 For advanced networking or persistent routes, see the main documentation.
