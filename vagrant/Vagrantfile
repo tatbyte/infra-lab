@@ -27,6 +27,7 @@ USERNAME_SH    = Shellwords.escape(USERNAME)
 PASSWORD_SH    = Shellwords.escape(PASSWORD)
 CREATE_USER    = ENV.fetch('VM_CREATE_USER', 'true').strip.downcase == 'true'
 BRIDGE_IF      = ENV['BRIDGE_IF'] || "eth0"
+DISABLE_WAIT_ONLINE = ENV.fetch('DISABLE_WAIT_ONLINE', 'true').strip.downcase == 'true'
 
 Vagrant.configure("2") do |config|
   # Give Vagrant more total boot time before it gives up waiting for SSH.
@@ -53,6 +54,16 @@ Vagrant.configure("2") do |config|
         lv.memory = VM_MEMORY
         lv.cpus   = VM_CPUS
         lv.cpu_mode = "host-passthrough"
+      end
+
+      if DISABLE_WAIT_ONLINE
+        # Provision: disable systemd-networkd-wait-online.service for faster SSH boot
+        node.vm.provision "shell", inline: <<-SHELL
+          set -e
+          echo "=== Disabling systemd-networkd-wait-online.service ==="
+          sudo systemctl disable systemd-networkd-wait-online.service
+          sudo systemctl mask systemd-networkd-wait-online.service
+        SHELL
       end
 
       if CREATE_USER
