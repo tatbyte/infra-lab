@@ -19,18 +19,17 @@ This lab is intentionally designed to provide:
   - box
   - memory
   - CPUs
-  - user
-  - whether to manage that user
-  - password
-  - bridge interface
-  - hostname-to-IP mapping
+    - user
+    - password
+    - bridge interface
+    - hostname-to-IP mapping
 
 - The `Vagrantfile` reads these settings and provisions VMs with:
   - static LAN IPs for each VM
-  - optional user management with password/sudo setup
-  - bridged networking for direct LAN access
-  - resource allocation (RAM and CPU)
-  - automated SSH configuration for Ansible compatibility
+    - custom user creation and SSH password setup
+    - bridged networking for direct LAN access
+    - resource allocation (RAM and CPU)
+    - automated SSH configuration for Ansible compatibility
 
 - Keeps the default libvirt management path so Vagrant can still manage the VM lifecycle.
 
@@ -144,60 +143,29 @@ Example:
 
 ## User Modes
 
-The Vagrant lab supports three practical user modes.
+The Vagrant lab supports three practical user modes:
 
-### 1. Original Vagrant user
+1. **Original Vagrant user**
+    - `VM_CREATE_USER=false`
+    - Leaves the base box user setup unchanged
+    - Keeps the default Vagrant account and key-based access path
+    - Best when you want the box exactly as provided upstream
+    - Typical access: `vagrant ssh node1`
 
-Use:
+2. **Original Vagrant user plus password SSH**
+    - `VM_CREATE_USER=true`, `VM_USER=vagrant`, `VM_PASS=vagrant`
+    - Keeps the existing `vagrant` user
+    - Updates that user password
+    - Grants sudo through the managed provisioning block
+    - Enables password SSH for LAN access
+    - Typical access: `ssh vagrant@192.168.0.101`
 
-    VM_CREATE_USER=false
-
-Behavior:
-
-- leaves the base box user setup unchanged
-- keeps the default Vagrant account and key-based access path
-- best when you want the box exactly as provided upstream
-
-Typical access:
-
-    vagrant ssh node1
-
-### 2. Original Vagrant user plus password SSH
-
-Use:
-
-    VM_CREATE_USER=true
-    VM_USER=vagrant
-    VM_PASS=vagrant
-
-Behavior:
-
-- keeps the existing `vagrant` user
-- updates that user password
-- grants sudo through the managed provisioning block
-- enables password SSH for LAN access
-
-Typical access:
-
-    ssh vagrant@192.168.0.101
-
-### 3. Fully new lab user
-
-Use:
-
-    VM_CREATE_USER=true
-    VM_USER=admin
-    VM_PASS=admin
-
-Behavior:
-
-- creates a separate lab user when it does not already exist
-- sets that user password and sudo access
-- enables password SSH for LAN access
-
-Typical access:
-
-    ssh admin@192.168.0.101
+3. **Fully new lab user**
+    - `VM_CREATE_USER=true`, `VM_USER=admin`, `VM_PASS=admin`
+    - Creates a separate lab user when it does not already exist
+    - Sets that user password and sudo access
+    - Enables password SSH for LAN access
+    - Typical access: `ssh admin@192.168.0.101`
 
 If you switch modes after a VM was already created, rebuild it:
 
@@ -248,17 +216,30 @@ So the machine itself was fine, but Vagrant reached it before SSH was available.
 
 ---
 
-## Current Mitigation
+## Fix Used
 
-The current Vagrant configuration increases SSH startup tolerance:
+The following commands were applied inside the guest:
 
-- `config.vm.boot_timeout = 300`
-- `config.ssh.connect_timeout = 30`
+        sudo systemctl disable systemd-networkd-wait-online.service
+        sudo systemctl mask systemd-networkd-wait-online.service
 
-Why this helps:
+### What these commands mean
 
-- Vagrant waits longer for the guest to finish booting
-- transient early boot `Connection refused` failures are less likely to abort `vagrant up`
+- `disable`
+    - prevents the service from starting automatically at boot
+
+- `mask`
+    - blocks the service from being started by dependencies or manual service activation
+
+### Why this fixed the issue
+
+Without that blocking wait-online step:
+
+- boot continues faster
+- SSH becomes available sooner
+- Vagrant can connect earlier during `vagrant up`
+
+This resolved the boot-time communicator problem in this lab setup.
 
 ---
 
@@ -273,7 +254,8 @@ This lab is built for:
 
 It does **not** need to block boot waiting for every network interface to be declared fully online before the system continues.
 
-For this use case, allowing a longer SSH startup window improves reliability without changing the base box boot services.
+
+For this use case, disabling `systemd-networkd-wait-online.service` is acceptable and improves reliability with Vagrant.
 
 ---
 
@@ -302,9 +284,10 @@ The extra network interface is part of that realism and should not be treated as
 
 ## Recommended Workflow
 
+
 1. Copy `template.env` to `.env` and adjust settings as needed
 2. Run `vagrant up` to start the lab
-3. Use the LAN IP to SSH into the VM with the user mode you selected
+3. Use the LAN IP to SSH into the VM
 4. Test Ansible playbooks, roles, Docker, or other tooling
 
 Examples:
@@ -312,7 +295,7 @@ Examples:
     vagrant up
     ssh admin@192.168.0.101
 
-Use `vagrant ssh <hostname>` when you keep the original base-box user mode. For password-managed modes, the LAN IP is usually the preferred path.
+Use `vagrant ssh <hostname>` only when needed. For most lab work, the LAN IP is the preferred path.
 
 ---
 
@@ -367,9 +350,10 @@ The setup intentionally uses:
 - a libvirt management NIC for Vagrant
 - a bridged LAN NIC for realistic per-host access
 
+
 The boot-time SSH issue was caused by delayed network readiness, not by broken Ansible logic or invalid SSH configuration.
 
-The current mitigation is a longer Vagrant boot and SSH timeout, while the per-host LAN IP design remains in place for testing.
+Disabling `systemd-networkd-wait-online.service` allowed SSH to start sooner and resolved the `vagrant up` connection problem while keeping the per-host LAN IP design needed for testing.
 
 ---
 

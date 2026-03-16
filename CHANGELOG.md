@@ -1,6 +1,15 @@
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.5.0] - 2026-03-16
+### Added
+- Added `DISABLE_WAIT_ONLINE` variable to `template.env` to control disabling of `systemd-networkd-wait-online.service` for faster Vagrant SSH boot.
+- Vagrantfile now conditionally disables/masks `systemd-networkd-wait-online.service` based on the variable.
+
+### Changed
+- README and documentation updated to highlight the wait-online fix and new environment variable.
 
 ## [1.4.0] - 2026-03-13
 ### Added
